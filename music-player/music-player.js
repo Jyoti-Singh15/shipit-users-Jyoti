@@ -371,7 +371,7 @@ class MusicPlayer {
                 e.preventDefault();
                 this.volume = Math.min(1, this.volume + 0.1);
                 this.audio.volume = this.volume;
-                this.updateVolumeBar();
+                this.updateVolumeBar();  
                 break;
             case 'ArrowDown':
                 e.preventDefault();
