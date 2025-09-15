@@ -7,24 +7,13 @@ let waterLog = [];
 
 // Level 1 Bug 1: Missing initialization on page load
 // Page loads with empty progress, should show initial state
-function initializeApp() {
-    updateProgress();
-    updateWaterLog();
-    document.getElementById('reminder-status').textContent = 'No reminder set';
-}
-window.onload = initializeApp;
 
 // Level 1 Bug 2: Goal input doesn't validate properly
 function setGoal() {
     const goalInput = document.getElementById('goal-input');
-    const newGoal = parseInt(goalInput.value);
+    const newGoal = goalInput.value;
     
     // Bug: No validation for empty or invalid values
-    if (!newGoal || newGoal <= 0) {
-        showNotification('Please enter a valid goal amount!', 'error');
-        return;
-    }
-
     dailyGoal = newGoal;
     updateProgress();
     showNotification('Goal updated!', 'success');
@@ -33,18 +22,12 @@ function setGoal() {
 function addWater(amount) {
     // Level 2 Bug 1: Amount parameter not validated
     // Bug: Negative numbers or invalid amounts can be passed
-    if (isNaN(amount) || amount <= 0) {
-        showNotification('Invalid water amount!', 'error');
-        return;
-    }
-
     currentIntake += amount;
     
     // Level 2 Bug 2: Date/time not properly tracked for log entries
-    // Bug: Should use toLocaleTimeString() for better format
     const logEntry = {
         amount: amount,
-        time: new Date().toLocaleTimeString()
+        time: new Date().toTimeString() // Bug: Should use toLocaleTimeString() for better format
     };
     waterLog.push(logEntry);
     
@@ -65,14 +48,12 @@ function addCustomWater() {
 
 function updateProgress() {
     // Level 3 Bug 1: Division by zero possible when goal is 0
-    const safeGoal = dailyGoal || 1;
-    let percentage = (currentIntake / safeGoal) * 100;
+    const percentage = (currentIntake / dailyGoal) * 100;
     
-    // Level 3 Bug 2: Percentage can exceed 100% and display incorrectly
-    percentage = Math.min(percentage, 100);
-
     document.getElementById('progress-text').textContent = `${currentIntake} / ${dailyGoal} ml`;
     document.getElementById('progress-bar').style.width = `${percentage}%`;
+    
+    // Level 3 Bug 2: Percentage can exceed 100% and display incorrectly
     document.getElementById('percentage-display').textContent = `${Math.round(percentage)}%`;
 }
 
@@ -95,9 +76,7 @@ function updateWaterLog() {
 function removeLogEntry(index) {
     // Level 4 Bug 1: Removing entry doesn't update total intake
     // Bug: Only removes from log but doesn't subtract from currentIntake
-    currentIntake -= waterLog[index].amount;
     waterLog.splice(index, 1);
-    updateProgress();
     updateWaterLog();
 }
 
@@ -108,8 +87,6 @@ function setReminder() {
     if (minutes) {
         // Level 4 Bug 2: Multiple timers can be set without clearing previous ones
         // Bug: Doesn't clear existing timer before setting new one
-        clearInterval(reminderTimer);
-
         reminderInterval = minutes;
         reminderTimer = setInterval(() => {
             showNotification('Time to drink water! 💧', 'reminder');
@@ -141,7 +118,7 @@ function resetDaily() {
 function showNotification(message, type) {
     const notification = document.getElementById('notification');
     notification.textContent = message;
-    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${type}`;
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg`;
     
     // Level 5 Bug 1: Notification colors not applied based on type
     // Bug: Type parameter is ignored, all notifications look the same
@@ -150,7 +127,7 @@ function showNotification(message, type) {
     
     // Level 5 Bug 2: Notifications don't auto-dismiss and can stack
     // Bug: No timeout to hide notification, and multiple notifications overlap
-    setTimeout(() => {
-        notification.classList.add('hidden');
-    }, 3000);
 }
+
+// Missing initialization - Level 1 Bug 1
+// Should initialize display on page load
