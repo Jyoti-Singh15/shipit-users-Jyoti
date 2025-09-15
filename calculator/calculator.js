@@ -76,6 +76,11 @@ function calculate() {
             result = prev * current;
             break;
         case '/':
+            if (current === 0) {
+        alert("Error: Division by zero is not allowed");
+        clearDisplay();
+        return;
+    }
             result = prev / current; 
             break;
         default:
@@ -84,6 +89,7 @@ function calculate() {
     
     // Bug Level 2 - Issue 2: Floating point precision issues
     // Result should be rounded to avoid floating point errors
+     result = parseFloat(result.toFixed(6));
     currentInput = result.toString();
     operator = '';
     previousInput = '';
@@ -104,7 +110,7 @@ function deleteLast() {
 // Bug Level 3 - Issue 1: Memory functions don't work with current display value
 function memoryStore() {
     if (currentInput !== '') {
-        memory = parseFloat(display.value); // Bug: Should use currentInput or display.value consistently
+        memory = parseFloat(currentInput); // Bug: Should use currentInput or display.value consistently
     }
 }
 
@@ -118,12 +124,14 @@ function memoryClear() {
 }
 
 // Bug Level 3 - Issue 2: Memory add function has logical error
+const MEMORY_LIMIT = 1e12;
 function memoryAdd() {
     if (currentInput !== '') {
         memory += parseFloat(currentInput);
     } else {
         memory += parseFloat(display.value); // Bug: Inconsistent behavior
     }
+    memory = Math.min(memory, MEMORY_LIMIT);
 }
 
 // Bug Level 4 - Issue 1: Multiple decimal points allowed
@@ -132,6 +140,8 @@ function appendToDisplay(value) {
         currentInput = '';
         isNewCalculation = false;
     }
+    
+
     
     if (isOperator(value)) {
         if (currentInput === '' && value === '-') {
@@ -146,6 +156,7 @@ function appendToDisplay(value) {
         }
     } else {
         // Bug: No check for multiple decimal points
+        if (value === '.' && currentInput.includes('.')) return;
         currentInput += value;
     }
     
@@ -154,6 +165,18 @@ function appendToDisplay(value) {
 
 // Bug Level 4 - Issue 2: Keyboard input not supported
 // Missing keyboard event listeners for better UX
+window.addEventListener('keydown', function(e) {
+    const validKeys = '0123456789+-*/.=BackspaceEnter';
+    if (validKeys.includes(e.key)) {
+        if (e.key === 'Enter' || e.key === '=') {
+            calculate();
+        } else if (e.key === 'Backspace') {
+            deleteLast();
+        } else {
+            appendToDisplay(e.key);
+        }
+    }
+});
 
 // Bug Level 5 - Issue 1: Chain calculations don't work properly
 function calculate() {
@@ -176,22 +199,29 @@ function calculate() {
             result = prev * current;
             break;
         case '/':
-            if (current === 0|| prev===0) { // Bug: Division by zero not handled
-                result=prev/0.000001;
+            
+            if (current === 0) {
+                
+                clearDisplay();
                 return;
             }
             result = prev / current;
             break;
+
+    
+
         default:
             return;
     }
     
     // Bug: Chain calculations reset previousInput incorrectly
+    result = parseFloat(result.toFixed(6));
     currentInput = result.toString();
     operator = '';
-    previousInput = ''; // Should keep result for chaining
+    previousInput = currentInput;  // Keep result for chaining
     isNewCalculation = true;
     updateDisplay();
+
 }
 
 // Bug Level 5 - Issue 2: Memory overflow not handled
@@ -203,6 +233,7 @@ function memoryAdd() {
     }
     // Bug: No check for memory overflow (very large numbers)
     // Should limit memory to reasonable bounds
+    memory = Math.min(memory, MEMORY_LIMIT);
 }
 
 // Initialize calculator on page load

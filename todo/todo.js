@@ -5,9 +5,11 @@ let currentFilter = 'all';
 let currentSort = 'none';
 
 // Level 1 Bug 1: Missing initialization function call
-// The app should initialize on page load but doesn't
+window.onload = function() {
+    updateCounts();
+    renderTasks();
+};
 
-// Level 1 Bug 2: Enter key doesn't work for adding tasks
 function addTask() {
     const taskInput = document.getElementById('task-input');
     const prioritySelect = document.getElementById('priority-select');
@@ -22,9 +24,8 @@ function addTask() {
     }
     
     // Level 2 Bug 1: Task ID collision possible
-    // taskIdCounter might reset or duplicate IDs can occur
     const newTask = {
-        id: taskIdCounter++, // Bug: No check for existing IDs
+        id: Date.now(), // Fixed: Use timestamp for unique IDs
         text: taskText,
         completed: false,
         priority: prioritySelect.value,
@@ -44,18 +45,23 @@ function addTask() {
     updateCounts();
 }
 
+document.getElementById('task-input').addEventListener('keypress', function(e) {
+    // Level 1 Bug 2: Enter key doesn't work for adding tasks
+    if (e.key === 'Enter') {
+        addTask();
+    }
+});
+
 function renderTasks() {
     const taskList = document.getElementById('task-list');
     taskList.innerHTML = '';
     
-    // Level 2 Bug 2: Filter logic is flawed
     let filteredTasks = tasks;
     if (currentFilter === 'pending') {
         filteredTasks = tasks.filter(task => !task.completed);
     } else if (currentFilter === 'completed') {
         filteredTasks = tasks.filter(task => task.completed);
     }
-    // Bug: 'all' filter doesn't properly show all tasks in some cases
     
     filteredTasks.forEach(task => {
         const taskElement = createTaskElement(task);
@@ -67,14 +73,19 @@ function createTaskElement(task) {
     const taskDiv = document.createElement('div');
     taskDiv.className = `p-4 border rounded-lg ${task.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`;
     
-    // Level 3 Bug 1: Priority colors not applied correctly
-    let priorityColor = 'gray'; // Bug: Should change based on task.priority but doesn't
+    let priorityColor = 'gray';
+    if (task.priority === 'low') priorityColor = 'green';
+    else if (task.priority === 'medium') priorityColor = 'yellow';
+    else if (task.priority === 'high') priorityColor = 'red';
     
-    // Level 3 Bug 2: Date formatting issues with invalid dates
     let dueDateText = '';
     if (task.dueDate) {
         const date = new Date(task.dueDate + 'T' + task.dueTime);
-        dueDateText = date.toLocaleDateString(); // Bug: Doesn't handle invalid dates
+        if (!isNaN(date)) {
+            dueDateText = date.toLocaleDateString();
+        } else {
+            dueDateText = 'Invalid Date';
+        }
     }
     
     taskDiv.innerHTML = `
@@ -127,20 +138,19 @@ function editTask(id) {
 }
 
 function deleteTask(id) {
-    // Level 4 Bug 1: Delete confirmation always shows even when cancelled
     const confirmed = confirm('Are you sure you want to delete this task?');
-    tasks = tasks.filter(t => t.id !== id); // Bug: Deletes even if not confirmed
-    renderTasks();
-    updateCounts();
+    if (confirmed) {
+        tasks = tasks.filter(t => t.id !== id);
+        renderTasks();
+        updateCounts();
+    }
 }
 
 function filterTasks(filter) {
     currentFilter = filter;
     
-    // Level 4 Bug 2: Filter buttons don't update active state properly
-    // Bug: Active class management is broken
     document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
+        btn.classList.toggle('active', btn.dataset.filter === currentFilter);
     });
     
     renderTasks();
@@ -150,8 +160,7 @@ function sortTasks(sortBy) {
     currentSort = sortBy;
     
     if (sortBy === 'priority') {
-        // Level 5 Bug 1: Priority sorting logic is incorrect
-        const priorityOrder = { 'low': 1, 'medium': 2, 'high': 3 }; // Bug: Wrong order, high should be first
+        const priorityOrder = { 'high': 1, 'medium': 2, 'low': 3 }; // Fixed correct order
         tasks.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
     } else if (sortBy === 'date') {
         tasks.sort((a, b) => {
@@ -189,16 +198,10 @@ function deleteCompleted() {
 }
 
 function clearAllTasks() {
-    // Level 5 Bug 2: No confirmation for destructive action
-    // Bug: Clears all tasks without asking for confirmation
-    tasks = [];
-    renderTasks();
-    updateCounts();
+    const confirmed = confirm('Are you sure you want to clear all tasks?');
+    if (confirmed) {
+        tasks = [];
+        renderTasks();
+        updateCounts();
+    }
 }
-
-// Missing initialization call - Level 1 Bug 1
-// Should call updateCounts() on page load
-// window.onload = function() {
-//     updateCounts();
-//     renderTasks();
-// };
