@@ -33,35 +33,35 @@ class MusicPlayer {
             {
                 title: "Chill Vibes",
                 artist: "Lo-Fi Beats",
-                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
+                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Sample audio
                 cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&crop=center",
                 duration: "3:45"
             },
             {
                 title: "Midnight Jazz",
                 artist: "Smooth Collective",
-                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
+                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Sample audio
                 cover: "https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=300&h=300&fit=crop&crop=center",
                 duration: "4:20"
             },
             {
                 title: "Ocean Waves",
                 artist: "Nature Sounds",
-                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
+                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Sample audio
                 cover: "https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=300&h=300&fit=crop&crop=center",
                 duration: "5:12"
             },
             {
                 title: "Electric Dreams",
                 artist: "Synthwave Pro",
-                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
+                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Sample audio
                 cover: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=300&h=300&fit=crop&crop=center",
                 duration: "3:58"
             },
             {
                 title: "Forest Rain",
                 artist: "Ambient Sounds",
-                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
+                src: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Sample audio
                 cover: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center",
                 duration: "6:33"
             }
@@ -113,12 +113,10 @@ class MusicPlayer {
             const rect = progressContainer.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const percentage = Math.min(Math.max(clickX / rect.width, 0), 1);
-
+            
             // BUG LEVEL 3-2: No check if audio is loaded before seeking
-            if (!isNaN(this.audio.duration)) {
-                this.audio.currentTime = percentage * this.audio.duration;
-                this.updateProgressBar(percentage);
-            }
+            this.audio.currentTime = percentage * this.audio.duration;
+            this.updateProgressBar(percentage);
         };
 
         progressContainer.addEventListener('click', updateProgress);
@@ -128,18 +126,15 @@ class MusicPlayer {
             e.preventDefault();
         });
 
-        const mouseMoveHandler = (e) => {
+        document.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 updateProgress(e);
             }
-        };
+        });
 
-        const mouseUpHandler = () => {
+        document.addEventListener('mouseup', () => {
             isDragging = false;
-        };
-
-        document.addEventListener('mousemove', mouseMoveHandler);
-        document.addEventListener('mouseup', mouseUpHandler);
+        });
     }
 
     setupVolumeControlInteraction() {
@@ -163,18 +158,16 @@ class MusicPlayer {
             e.preventDefault();
         });
 
-        const mouseMoveHandler = (e) => {
+        // BUG LEVEL 5-1: Memory leak - event listeners added to document but never removed
+        document.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 updateVolume(e);
             }
-        };
+        });
 
-        const mouseUpHandler = () => {
+        document.addEventListener('mouseup', () => {
             isDragging = false;
-        };
-
-        document.addEventListener('mousemove', mouseMoveHandler);
-        document.addEventListener('mouseup', mouseUpHandler);
+        });
     }
 
     loadTrack(index) {
@@ -201,14 +194,12 @@ class MusicPlayer {
 
     play() {
         // BUG LEVEL 5-2: Race condition - async play() can fail but state is set to playing immediately
-        this.audio.play().then(() => {
-            this.isPlaying = true;
-            this.playPauseBtn.innerHTML = '<i class="fas fa-pause text-2xl"></i>'; // Corrected icon for pause
-            this.albumArt.classList.remove('paused');
-            this.updatePlaylistHighlight();
-        }).catch(error => {
-            console.error('Playback failed:', error);
-        });
+        this.audio.play();
+        this.isPlaying = true;
+        // BUG LEVEL 1-1: Wrong icon used for pause button
+        this.playPauseBtn.innerHTML = '<i class="fas fa-play text-2xl"></i>';
+        this.albumArt.classList.remove('paused');
+        this.updatePlaylistHighlight();
     }
 
     pause() {
@@ -220,11 +211,8 @@ class MusicPlayer {
 
     previousTrack() {
         if (this.isShuffle) {
-            let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * this.tracks.length);
-            } while (newIndex === this.currentTrackIndex);
-            this.currentTrackIndex = newIndex;
+            // BUG LEVEL 3-1: Shuffle can select the same track repeatedly
+            this.currentTrackIndex = Math.floor(Math.random() * this.tracks.length);
         } else {
             this.currentTrackIndex = this.currentTrackIndex > 0 ? this.currentTrackIndex - 1 : this.tracks.length - 1;
         }
@@ -236,11 +224,7 @@ class MusicPlayer {
 
     nextTrack() {
         if (this.isShuffle) {
-            let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * this.tracks.length);
-            } while (newIndex === this.currentTrackIndex);
-            this.currentTrackIndex = newIndex;
+            this.currentTrackIndex = Math.floor(Math.random() * this.tracks.length);
         } else {
             this.currentTrackIndex = this.currentTrackIndex < this.tracks.length - 1 ? this.currentTrackIndex + 1 : 0;
         }
@@ -253,8 +237,8 @@ class MusicPlayer {
     toggleShuffle() {
         this.isShuffle = !this.isShuffle;
         // BUG LEVEL 2-2: Reversed logic for shuffle button styling
-        this.shuffleBtn.classList.toggle('text-white', this.isShuffle);
-        this.shuffleBtn.classList.toggle('text-white/60', !this.isShuffle);
+        this.shuffleBtn.classList.toggle('text-white', !this.isShuffle);
+        this.shuffleBtn.classList.toggle('text-white/60', this.isShuffle);
     }
 
     toggleRepeat() {
@@ -294,7 +278,7 @@ class MusicPlayer {
             const percentage = (this.audio.currentTime / this.audio.duration) * 100;
             this.updateProgressBar(percentage / 100);
             // BUG LEVEL 2-1: Using wrong property for current time display
-            this.currentTimeEl.textContent = this.formatTime(this.audio.currentTime);
+            this.currentTimeEl.textContent = this.formatTime(this.audio.duration);
         }
     }
 
@@ -316,7 +300,7 @@ class MusicPlayer {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
         // BUG LEVEL 1-2: Missing colon in time format
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        return `${minutes}${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
     renderPlaylist() {
@@ -346,14 +330,14 @@ class MusicPlayer {
         const playlistItems = this.playlist.children;
         for (let i = 0; i < playlistItems.length; i++) {
             // BUG LEVEL 4-1: Playlist highlight logic doesn't clear previous highlights
-            playlistItems[i].classList.toggle('bg-white/20', i === this.currentTrackIndex && this.isPlaying);
+            if (i === this.currentTrackIndex && this.isPlaying) {
+                playlistItems[i].classList.add('bg-white/20');
+            }
         }
     }
 
     handleKeyboardShortcuts(e) {
         // BUG LEVEL 4-2: Keyboard shortcuts work even in text inputs
-        if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
-
         switch(e.code) {
             case 'Space':
                 e.preventDefault();
@@ -371,7 +355,7 @@ class MusicPlayer {
                 e.preventDefault();
                 this.volume = Math.min(1, this.volume + 0.1);
                 this.audio.volume = this.volume;
-                this.updateVolumeBar();  
+                this.updateVolumeBar();
                 break;
             case 'ArrowDown':
                 e.preventDefault();
