@@ -77,8 +77,8 @@ function calculate() {
             break;
         case '/':
             if (current === 0) {
-        alert("Error: Division by zero is not allowed");
-        clearDisplay();
+            alert("Error: Division by zero is not allowed");
+            clearDisplay();
         return;
     }
             result = prev / current; 
