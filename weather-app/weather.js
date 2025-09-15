@@ -2,16 +2,30 @@
 let apiKey = "dummyapikey"; 
 let weatherDisplay = document.getElementById("weather-display");
 let errorDisplay = document.getElementById("error-display");
+let debounceTimer;
 
-// Add Enter key listener (fix Level 1 Bug 1)
+// Initialize Enter key listener with debounce
 document.getElementById("city-input").addEventListener("keydown", (e) => {
- 
+    if (e.key === "Enter") {
+        e.preventDefault();
+        getWeatherDebounced();
+    }
 });
 
+// Debounce function to prevent API flooding
+function getWeatherDebounced() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(getWeather, 500); // 500ms delay
+}
+
 function getWeather() {
-    const city = document.getElementById("city-input").value.trim();
-    if (!city) {
-        errorDisplay.textContent = "Please enter a city name.";
+    const cityInput = document.getElementById("city-input");
+    const city = cityInput.value.trim();
+
+    // Input validation: letters and spaces only
+    if (!city || !/^[a-zA-Z\s]+$/.test(city)) {
+        errorDisplay.textContent = "Please enter a valid city name.";
+        weatherDisplay.innerHTML = "";
         return;
     }
 
@@ -26,14 +40,13 @@ function getWeather() {
             return response.json();
         })
         .then((data) => {
-            if (!data || !data.current) {
-                throw new Error("Invalid data received");
+            if (!data || !data.current || !data.location) {
+                throw new Error("Invalid data received from API");
             }
 
-            // Correct fields for WeatherAPI
             const temp = data.current.temp_c;
             const desc = data.current.condition.text;
-            const icon = "https:" + data.current.condition.icon; // prepend protocol
+            const icon = data.current.condition.icon ? "https:" + data.current.condition.icon : "default-icon.png";
 
             weatherDisplay.innerHTML = `
                 <div class="flex flex-col items-center">
@@ -46,14 +59,7 @@ function getWeather() {
             errorDisplay.textContent = "";
         })
         .catch((err) => {
-            // More descriptive error handling
             errorDisplay.textContent = `Error: ${err.message}`;
-            weatherDisplay.innerHTML = "";
+            weatherDisplay.innerHTML = ""; // Clear old weather info
         });
 }
-
-// Level 4 Bug 1: Old weather doesn't clear if new search fails
-// Level 4 Bug 2: Icons may not match weather condition: icon fetch not validated
-
-// Level 5 Bug 1: No debounce for search; repeated clicks can flood API
-// Level 5 Bug 2: No input validation (numbers, script, non-city input allowed)
